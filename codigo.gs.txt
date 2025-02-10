@@ -1,0 +1,108 @@
+function doGet(e) {
+  return HtmlService.createHtmlOutputFromFile('index');
+}
+
+// Función para autenticar usuarios
+function loginUser(username, password) {
+  var sheet = SpreadsheetApp.openById('1C_USJrOi8p51pn0a1gkJvQL-ATJb5zEHldrALdhtRQI').getSheetByName('Usuarios');
+  var data = sheet.getDataRange().getValues();
+  
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] == username && data[i][1] == password) {
+      return { success: true, role: data[i][3], name: data[i][2] };
+    }
+  }
+  return { success: false };
+}
+
+function buscarCodigo(codigo) {
+  var ss = SpreadsheetApp.openById('1C_USJrOi8p51pn0a1gkJvQL-ATJb5zEHldrALdhtRQI');
+  var sheetEquipos = ss.getSheetByName('Equipos');
+  var sheetTableros = ss.getSheetByName('Tableros');
+
+  var dataEquipos = sheetEquipos.getDataRange().getValues();
+  var dataTableros = sheetTableros.getDataRange().getValues();
+
+  console.log("📌 Buscando código:", codigo);
+
+  for (var i = 1; i < dataEquipos.length; i++) {
+    if (dataEquipos[i][0] == codigo) {
+      var codigoTablero = dataEquipos[i][4]; 
+
+      var tableroImagen = obtenerImagenTablero(dataTableros, codigoTablero);
+
+
+      var resultado = {
+        tipo: "Equipo",
+        codigo: dataEquipos[i][0],
+        nombre: dataEquipos[i][1] || "No disponible",
+        ubicacion: dataEquipos[i][2] || "No disponible",
+        area: dataEquipos[i][3] || "No disponible",
+        tablero: codigoTablero || "No asignado",
+        imagen: dataEquipos[i][8] || "", 
+        estado: dataEquipos[i][5] || "Desconocido",
+        mantenimiento: dataEquipos[i][9] || "Sin datos",
+        tableroImagen: tableroImagen || ""
+      };
+
+      console.log("✅ Enviando respuesta:", resultado);
+      return resultado;
+    }
+  }
+
+  for (var j = 1; j < dataTableros.length; j++) {
+    if (dataTableros[j][0] == codigo) {
+      var resultado = {
+        tipo: "Tablero",
+        codigo: dataTableros[j][0],
+        nombre: dataTableros[j][0],
+        ubicacion: dataTableros[j][1] || "No disponible",
+        area: dataTableros[j][2] || "No disponible",
+        equipos: dataTableros[j][3] || "No registrado",
+        imagen: dataTableros[j][7] || "", 
+        estado: dataTableros[j][4] || "Desconocido"
+      };
+
+      console.log("✅ Enviando respuesta:", resultado);
+      return resultado;
+    }
+  }
+
+  console.log("❌ Código no encontrado:", codigo);
+  return { error: "Código no encontrado" };
+}
+
+
+
+// Función para obtener la imagen del tablero asociado al equipo
+function obtenerImagenTablero(dataTableros, codigoTablero) {
+  for (var k = 1; k < dataTableros.length; k++) {
+    if (dataTableros[k][0] == codigoTablero) {
+      return dataTableros[k][7] || ""; // Suponiendo que la imagen del tablero está en la columna 7
+    }
+  }
+  return "";
+}
+
+function buscarMantenimientos(codigo) {
+  var ss = SpreadsheetApp.openById('1C_USJrOi8p51pn0a1gkJvQL-ATJb5zEHldrALdhtRQI');
+  var sheet = ss.getSheetByName('Mantenimientos');
+  var data = sheet.getDataRange().getValues();
+  var mantenimientos = [];
+
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] == codigo) {
+      mantenimientos.push({
+        fecha: data[i][1],
+        descripcion: data[i][2],
+        tecnico: data[i][3],
+        tipo: data[i][4],
+        duracion: data[i][5],
+        costo: data[i][6],
+        observaciones: data[i][7]
+      });
+    }
+  }
+  
+  return mantenimientos.length > 0 ? { success: true, mantenimientos: mantenimientos } : { success: false, error: "No se encontraron mantenimientos." };
+}
