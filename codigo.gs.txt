@@ -1,8 +1,19 @@
 function doGet(e) {
-  return HtmlService.createHtmlOutputFromFile('index');
+  var action = e.parameter.action;
+  if (action === "loginUser") {
+    return ContentService.createTextOutput(JSON.stringify(loginUser(e.parameter.username, e.parameter.password)))
+      .setMimeType(ContentService.MimeType.JSON);
+  } else if (action === "buscarCodigo") {
+    return ContentService.createTextOutput(JSON.stringify(buscarCodigo(e.parameter.codigo)))
+      .setMimeType(ContentService.MimeType.JSON);
+  } else if (action === "buscarMantenimientos") {
+    return ContentService.createTextOutput(JSON.stringify(buscarMantenimientos(e.parameter.codigo)))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  return ContentService.createTextOutput(JSON.stringify({ error: "Acción no válida" }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
-// Función para autenticar usuarios
 function loginUser(username, password) {
   var sheet = SpreadsheetApp.openById('1C_USJrOi8p51pn0a1gkJvQL-ATJb5zEHldrALdhtRQI').getSheetByName('Usuarios');
   var data = sheet.getDataRange().getValues();
@@ -12,73 +23,42 @@ function loginUser(username, password) {
       return { success: true, role: data[i][3], name: data[i][2] };
     }
   }
-  return { success: false };
+  return { success: false, error: "Credenciales incorrectas" };
 }
 
 function buscarCodigo(codigo) {
   var ss = SpreadsheetApp.openById('1C_USJrOi8p51pn0a1gkJvQL-ATJb5zEHldrALdhtRQI');
   var sheetEquipos = ss.getSheetByName('Equipos');
   var sheetTableros = ss.getSheetByName('Tableros');
-
+  
   var dataEquipos = sheetEquipos.getDataRange().getValues();
   var dataTableros = sheetTableros.getDataRange().getValues();
-
-  console.log("📌 Buscando código:", codigo);
-
+  
   for (var i = 1; i < dataEquipos.length; i++) {
     if (dataEquipos[i][0] == codigo) {
       var codigoTablero = dataEquipos[i][4]; 
-
       var tableroImagen = obtenerImagenTablero(dataTableros, codigoTablero);
-
-
-      var resultado = {
+      return {
         tipo: "Equipo",
         codigo: dataEquipos[i][0],
         nombre: dataEquipos[i][1] || "No disponible",
         ubicacion: dataEquipos[i][2] || "No disponible",
         area: dataEquipos[i][3] || "No disponible",
         tablero: codigoTablero || "No asignado",
-        imagen: dataEquipos[i][8] || "", 
+        imagen: dataEquipos[i][8] || "",
         estado: dataEquipos[i][5] || "Desconocido",
         mantenimiento: dataEquipos[i][9] || "Sin datos",
         tableroImagen: tableroImagen || ""
       };
-
-      console.log("✅ Enviando respuesta:", resultado);
-      return resultado;
     }
   }
-
-  for (var j = 1; j < dataTableros.length; j++) {
-    if (dataTableros[j][0] == codigo) {
-      var resultado = {
-        tipo: "Tablero",
-        codigo: dataTableros[j][0],
-        nombre: dataTableros[j][0],
-        ubicacion: dataTableros[j][1] || "No disponible",
-        area: dataTableros[j][2] || "No disponible",
-        equipos: dataTableros[j][3] || "No registrado",
-        imagen: dataTableros[j][7] || "", 
-        estado: dataTableros[j][4] || "Desconocido"
-      };
-
-      console.log("✅ Enviando respuesta:", resultado);
-      return resultado;
-    }
-  }
-
-  console.log("❌ Código no encontrado:", codigo);
   return { error: "Código no encontrado" };
 }
 
-
-
-// Función para obtener la imagen del tablero asociado al equipo
 function obtenerImagenTablero(dataTableros, codigoTablero) {
   for (var k = 1; k < dataTableros.length; k++) {
     if (dataTableros[k][0] == codigoTablero) {
-      return dataTableros[k][7] || ""; // Suponiendo que la imagen del tablero está en la columna 7
+      return dataTableros[k][7] || "";
     }
   }
   return "";
