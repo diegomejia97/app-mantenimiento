@@ -1,17 +1,24 @@
 function doGet(e) {
   var action = e.parameter.action;
+  var output;
+
   if (action === "loginUser") {
-    return ContentService.createTextOutput(JSON.stringify(loginUser(e.parameter.username, e.parameter.password)))
-      .setMimeType(ContentService.MimeType.JSON);
+    output = JSON.stringify(loginUser(e.parameter.username, e.parameter.password));
   } else if (action === "buscarCodigo") {
-    return ContentService.createTextOutput(JSON.stringify(buscarCodigo(e.parameter.codigo)))
-      .setMimeType(ContentService.MimeType.JSON);
+    output = JSON.stringify(buscarCodigo(e.parameter.codigo));
   } else if (action === "buscarMantenimientos") {
-    return ContentService.createTextOutput(JSON.stringify(buscarMantenimientos(e.parameter.codigo)))
-      .setMimeType(ContentService.MimeType.JSON);
+    output = JSON.stringify(buscarMantenimientos(e.parameter.codigo));
+  } else {
+    output = JSON.stringify({ error: "Acción no válida" });
   }
-  return ContentService.createTextOutput(JSON.stringify({ error: "Acción no válida" }))
-    .setMimeType(ContentService.MimeType.JSON);
+
+  return ContentService.createTextOutput(output)
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeaders({
+      "Access-Control-Allow-Origin": "*", 
+      "Access-Control-Allow-Methods": "GET",
+      "Access-Control-Allow-Headers": "Content-Type"
+    });
 }
 
 function loginUser(username, password) {
